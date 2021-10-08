@@ -1,0 +1,6 @@
+MKSHELL="/bin/bash"
+
+#Find input files and pass to miRmap script
+%.mirmapout:Q: %.mirna.fa %.utr.fa
+	echo "[DEBUG] Running miRmap on $prereq"
+	python3 mirmap_script.py $prereq $target

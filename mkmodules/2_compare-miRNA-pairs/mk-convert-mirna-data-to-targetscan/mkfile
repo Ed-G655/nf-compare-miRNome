@@ -1,0 +1,6 @@
+MKSHELL="/bin/bash"
+
+#Pass args to Rscript
+%.mirna.txt:Q: %.mirna.fa
+	echo "[DEBUG] Converting mirna data "
+	Rscript --vanilla convert_mirna_data_to_targetscan.R $prereq $target

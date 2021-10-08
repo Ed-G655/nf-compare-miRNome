@@ -1,0 +1,7 @@
+MKSHELL="/bin/bash"
+#Find input files and pass to TargetScan script
+%.tsout:Q: %.mirna.txt %.utr.txt
+	echo "[DEBUG] searching input files"
+	echo "[DEBUG] $prereq"
+	echo "[DEBUG] $target"
+	perl targetscan_70.pl $prereq $target
