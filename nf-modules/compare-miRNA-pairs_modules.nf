@@ -185,7 +185,7 @@ process Compare_targets {
 
   input:
 	file mirmapid
-	file tsid 
+	file tsid
 	file mk_files
 
   output:

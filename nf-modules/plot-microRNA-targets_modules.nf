@@ -66,63 +66,38 @@ intermediates_dir = "${params.output_dir}/${pipeline_name}-intermediate/"
 /*================================================================/*
 
 /* MODULE START */
+/* miRNome_changes */
+process miRNome_changes {
 
-/* Load  miRNA reference targets file into channel*/
-Channel
-	.fromPath( "${params.targets_ref}" )
-	// .view()
-	.set{ targets_ref_input }
-
-/* Load miRNA mutate targets file into channel */
-Channel
-	.fromPath( "${params.targets_mut}" )
-	// .view()
-	.set{ targets_mut_input }
-
-/* _pre1_compare_mirnatargets */
-/* Read mkfile module files */
-Channel
-	.fromPath("${workflow.projectDir}/mk-modules/mk-compare-mirnatargets/*")
-	.toList()
-	.set{ mkfiles_pre1 }
-
-process _pre1_compare_mirnatargets {
-
-	publishDir "${results_dir}/_pre1_compare_mirnatargets/",mode:"copy"
+	publishDir "${results_dir}/miRNome_changes/",mode:"copy"
 
 	input:
-	file ref_targets from targets_ref_input
-	file mut_targets from targets_mut_input
-	file mk_files from mkfiles_pre1
+	file ref_targets
+	file mut_targets
+	file Rscript
 
 	output:
-	file "*.changes" into results_pre1_compare_mirnatargets
-	file "*.png" into results_pre1_compare_mirnatargets_png
+	file "*.changes"
+	file "*.png"
+
 	"""
-	bash runmk.sh
+	Rscript --vanilla Compare_mutate_targets.R ${ref_targets[0]} ${mut_targets[0]} ${ref_targets[0].baseName}.changes
 	"""
 
 }
 
 
-/* _pre2_convert-target-file */
-/* Read mkfile module files */
-Channel
-	.fromPath("${workflow.projectDir}/mk-modules/mk-convert-target-file/*")
-	.toList()
-	.set{ mkfiles_pre2 }
+/* _pos2_convert_target_file */
+process pos2_convert_target_file {
 
-process _pre2_convert_target_file {
-
-	publishDir "${results_dir}/_pre2_convert_target_file/",mode:"copy"
+	publishDir "${results_dir}/pos2_convert_target_file/",mode:"copy"
 
 	input:
-	file changes from results_pre1_compare_mirnatargets
-	file mk_files from mkfiles_pre2
+	file changes
+	file mk_files
 
 	output:
-	file "*.changes.tsv" into results_A_pre2_convert_target_file, results_B_pre2_convert_target_file
-
+	file "*.changes.tsv"
 	"""
 	bash runmk.sh
 	"""
@@ -130,23 +105,16 @@ process _pre2_convert_target_file {
 }
 
 /* 001_butterfly-plot-target-changes */
-/* Read mkfile module files */
-Channel
-	.fromPath("${workflow.projectDir}/mk-modules/mk-butterfly-plot-target-changes/*")
-	.toList()
-	.set{mkfiles_core1}
+process pos3_butterfly_plot_target_changes {
 
-
-process _001_butterfly_plot_target_changes {
-
-	publishDir "${results_dir}/001_butterfly_plot_target_changes/",mode:"copy"
+	publishDir "${results_dir}/pos3_butterfly_plot_target_changes/",mode:"copy"
 
 	input:
-	file changes_tsv from results_A_pre2_convert_target_file
-	file mk_files from mkfiles_core1
+	file changes_tsv
+	file mk_files
 
 	output:
-	file "*.png" into results_001_butterfly_plot_target_changes
+	file "*.png"
 
 	"""
 	bash runmk.sh
@@ -154,24 +122,18 @@ process _001_butterfly_plot_target_changes {
 
 }
 
-/* 001_butterfly-plot-target-changes */
-/* Read mkfile module files */
-Channel
-	.fromPath("${workflow.projectDir}/mk-modules/mk-plot-target-changes-count/*")
-	.toList()
-	.set{mkfiles_core2}
+/* plot-target-changes */
 
+process pos4_plot_target_changes_count {
 
-process _002_plot_target_changes_count {
-
-	publishDir "${results_dir}/_002_plot-target-changes-count/",mode:"copy"
+	publishDir "${results_dir}/pos4_plot_target_changes_count/",mode:"copy"
 
 	input:
-	file changes_tsv from results_B_pre2_convert_target_file
-	file mk_files from mkfiles_core2
+	file changes_tsv
+	file mk_files
 
 	output:
-	file "*.png" into results_002_plot_target_changes_count
+	file "*.png"
 
 	"""
 	bash runmk.sh

@@ -31,18 +31,37 @@ Pipeline Processes In Brief:
 Pre-processing:
 _pre1_split_chromosomes
 _pre2_make_consensus_sequence
+_pre3_extract_mirna_FASTA_ref
+_pre4_extract_utr_FASTA_ref
+_pre5_extract_utr_FASTA_ref
+_pre6_extract_mirna_FASTA_mut
+_pre7_extract_utr_FASTA_mut
+_pre8_merge_mirref_fastas
+_pre9_merge_utrref_fastas
+_pre10_merge_mirmut_fastas
+_pre11_merge_utrmut_fastas
 
 Core-processing:
-_001A_extract_mirna_FASTA_ref
-_002A_extract_utr_FASTA_ref
-_001B_extract_mirna_FASTA_mut
-_002B_extract_utr_FASTA_mut
+CORE_1_REF_tun_mirmap
+CORE_1_MUT_tun_mirmap
+CORE_2A_Make_mirmap_ids
+CORE_2B_Make_mirmap_ids
+CORE_3A_Convert_mirna_data_to_targetscan
+CORE_3B_Convert_mirna_data_to_targetscan
+CORE_4A_Convert_utr_data_to_targetscan
+CORE_4B_Convert_utr_data_to_targetscan
+CORE_5A_Run_targetscan_REF
+CORE_5B_Run_targetscan_MUT
+Core_6A_Make_targetscan_IDs_REF
+Core_6B_Make_targetscan_IDs_MUT
+Core 7_Compare_targets_REF
+Core 8_Compare_targets_MUT
 
 Pos-processing:
-_01A_merge_mirref_fastas
-_02A_merge_utrref_fastas
-_01B_merge_mirmut_fastas
-_02B_merge_utrmut_fastas
+Pos_1_miRNome_changes
+Pos_2_convert_target_file
+Pos_3_butterfly-plot-target-changes
+Pos_4_plot_target_changes_count
 
 Analysis:
 
@@ -358,9 +377,29 @@ Channel
 /* Pos_compare_mirnatargets */
 /* Read mkfile module files */
 Channel
-	.fromPath("${workflow.projectDir}/mkmodules/3_analyze-miRNome/mk-compare-mirnatargets/*")
+	.fromPath("${workflow.projectDir}/mkmodules/3_analyze-miRNome/mk-compare-mirnatargets/Compare_mutate_targets.R/*")
 	.toList()
-	.set{ mkfiles_pre1 }
+	.set{ Rscript_pos }
+/* _pos2_convert_target_file */
+	/* Read mkfile module files */
+Channel
+	.fromPath("${workflow.projectDir}/mkmodules/3_analyze-miRNome/mk-convert-target-file/*")
+	.toList()
+	.set{ mkfiles_pos2}
+	/* 001_butterfly-plot-target-changes */
+	/* Read mkfile module files */
+	Channel
+		.fromPath("${workflow.projectDir}/mkmodules/3_analyze-miRNome/mk-butterfly-plot-target-changes/*")
+		.toList()
+		.set{mkfiles_pos3}
+
+/* plot-target-changes */
+/* Read mkfile module files */
+Channel
+	.fromPath("${workflow.projectDir}/mkmodules/3_analyze-miRNome/mk-plot-target-changes-count/*")
+	.toList()
+	.set{mkfiles_pos4}
+
 
 /*	 * Import modules */
 include {  _pre1_split_chromosomes;
@@ -390,6 +429,12 @@ include { Run_miRmap;
 					Make_targetscan_ids as Make_targetscan_ids_AGAIN;
 					Compare_targets;
 					Compare_targets as Compare_targets_AGAIN } from './nf-modules/compare-miRNA-pairs_modules.nf'
+
+
+include { miRNome_changes;
+	pos2_convert_target_file;
+	pos3_butterfly_plot_target_changes;
+	pos4_plot_target_changes_count } from './nf-modules/plot-microRNA-targets_modules.nf'
 
 /*  main pipeline logic */
 workflow  {
@@ -471,13 +516,20 @@ workflow  {
 						Make_targetscan_ids_AGAIN(	Run_targetscan_AGAIN.out,
 																				mkfiles_core_6)
 						// Core 7: Compare_targets REF
-						Compare_targets(	Make_mirmap_ids.out,
+						REF_targets = Compare_targets(	Make_mirmap_ids.out,
 															Make_targetscan_ids.out,
 															mkfiles_core_7)
 						// Core 7: Compare_targets REF
-						Compare_targets_AGAIN(	Make_mirmap_ids_AGAIN.out,
+						MUT_targets = Compare_targets_AGAIN(	Make_mirmap_ids_AGAIN.out,
 															Make_targetscan_ids_AGAIN.out,
 															mkfiles_core_7)
-						// POs 1: Compare_targets REF
+						// Pos 1: miRNome_changes
+						miRNome_changes(REF_targets, MUT_targets, Rscript_pos)
+						// Pos 2: Convert
+						pos2_convert_target_file(miRNome_changes.out[0], mkfiles_pos2)
+						// Pos 3:001_butterfly-plot-target-changes
+						pos3_butterfly_plot_target_changes(pos2_convert_target_file.out,mkfiles_pos3)
+						// Pos 4:pos4_plot_target_changes_count
+						pos4_plot_target_changes_count(pos2_convert_target_file.out,mkfiles_pos4)
 
 }
