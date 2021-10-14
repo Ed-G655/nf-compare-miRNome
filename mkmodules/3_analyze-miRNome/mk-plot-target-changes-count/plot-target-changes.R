@@ -14,6 +14,7 @@ args = commandArgs(trailingOnly=TRUE)
 
 #args[2] <- "test/data/sample.png" # output file
 
+
 ## get the file with the miRNA targets and its changes
 mirna_changes_file <- args[1]
 
@@ -70,8 +71,11 @@ gain_and_lost.p <- ggplot(count_change_target_1, aes(x = miRbase_ID,
   ylab("Numero de pares miRNA/blanco") +
   xlab("ID miRbase") +
   labs(title = "Sitos blancos por miRNA y sus cambios debido a mutaciones en el miRNA") +
-  labs(fill="Target change")
-  
+  labs(fill="Target change") +
+  scale_fill_manual(values = c("lost" = "#c87570",
+                               "gained" = "#70c875",
+                               "remained" = "#7570c8"))
+gain_and_lost.p
 
 ggsave( filename = mirna_mut_file,
         plot = gain_and_lost.p,
