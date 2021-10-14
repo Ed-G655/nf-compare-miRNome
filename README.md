@@ -11,8 +11,8 @@ Basic idea:
 2)  Use miRmap and TargetScan to predict miRNA targets of reference and
     mutate sequences
 
-3)Compare microRNA targets and calcule changes to plot microRNA target
-changes.
+3)Compare microRNA targets and calcule changes to plot microRNA target changes
+
 ------------------------------------------------------------------------
 
 ### Workflow overview
