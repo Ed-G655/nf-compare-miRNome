@@ -9,3 +9,4 @@ MKSHELL="/bin/bash"
 	tail -n +2 $bed | cut -f 1-6  > $bed.tmp
 	echo "[DEBUG] Extracting $prereq into $target"
 	bedtools getfasta -fi $stem.tmp -bed $bed.tmp -name -s -fo $target
+	rm *.tmp*

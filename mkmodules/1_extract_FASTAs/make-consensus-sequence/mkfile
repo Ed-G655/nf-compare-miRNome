@@ -13,6 +13,7 @@ MKSHELL="/bin/bash"
 		cat $fasta | bcftools consensus $prereq > $target
 		fi
 	done
+	rm *.tmp
 # filter vcf file
 %.vcf.gz.tmp:Q: %.vcf
 	echo "[DEBUG] filtrando $prereq"
