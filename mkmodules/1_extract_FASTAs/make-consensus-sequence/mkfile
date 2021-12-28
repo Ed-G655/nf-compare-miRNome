@@ -5,8 +5,8 @@ MKSHELL="/bin/bash"
 	fastas=$(find -L . -type f -name "*.fa")
 	for fasta in $fastas
 	do
-		fasta_chrom=$(echo ${fasta//[^0-9]/})
-		vcf_chrom=$(echo ${prereq//[^0-9]/})
+		fasta_chrom=$(grep ">" $fasta | tr -d ">")
+		vcf_chrom=$(bcftools query -f '%CHROM\n' $prereq | head -1)
 		if [ $fasta_chrom == $vcf_chrom ]
 		then
 		echo "[DEBUG] Creando secuencia consenso de $fasta a partir de $prereq"
