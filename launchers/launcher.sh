@@ -3,7 +3,7 @@ cd ../
 
 mirnabed="/bodega/projects/miRNome_project/references/beds/hsa_mature_miRNAs.bed"
 utrbed="/bodega/projects/miRNome_project/references/beds/3utr.bed"
-vcf="/bodega/projects/miRNome_project/references/vcfs/LXXVIg_PASS_AF_OV.vcf.gz"
+vcf="/bodega/projects/miRNome_project/references/vcfs/76g_PASS_0_05.vcf.gz"
 fasta="/bodega/projects/miRNome_project/references/fastas/"
 output_directory="/bodega/projects/miRNome_project/analisis/100GMX/results"
 
