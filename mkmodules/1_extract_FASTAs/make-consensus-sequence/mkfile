@@ -12,10 +12,11 @@ MKSHELL="/bin/bash"
 		echo "[DEBUG] Creando secuencia consenso de $fasta a partir de $prereq"
 		cat $fasta | bcftools consensus $prereq > $target
 		fi
-	done
-	rm *.tmp
-# filter vcf file
-%.vcf.gz.tmp:Q: %.vcf
-	echo "[DEBUG] filtrando $prereq"
+	done && rm $prereq && rm $prereq.csi
+
+# filter and index vcf file
+%.vcf.gz.tmp:Q: %.vcf.gz
+	echo "[DEBUG] filtering $prereq"
 	bcftools norm -m+ $prereq | bcftools view -m2 -M2 -v snps |	bgzip -c > $target
+	echo "[DEBUG] indexing $prereq"
 	bcftools index $target
