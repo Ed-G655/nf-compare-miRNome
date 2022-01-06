@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+##!/usr/bin/env bash
 cd ../
 
 mirnabed="/bodega/projects/miRNome_project/references/beds/hsa_mature_miRNAs.bed"
