@@ -5,5 +5,5 @@
 find -L . \
   -type f \
   -name "*.fa" \
-| sed "s#.fa#.mirref#" \
+| sed "s#.fa#.mirna.fa#" \
 | xargs mk

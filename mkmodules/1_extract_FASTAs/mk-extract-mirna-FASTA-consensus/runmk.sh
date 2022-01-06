@@ -5,5 +5,5 @@
 find -L . \
   -type f \
   -name "*.fa.consensus" \
-| sed "s#.fa.consensus#.mirmut#" \
+| sed "s#.fa.consensus#.mirna.fa#" \
 | xargs mk

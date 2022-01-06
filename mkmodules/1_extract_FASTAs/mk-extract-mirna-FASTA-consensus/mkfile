@@ -1,7 +1,7 @@
 MKSHELL="/bin/bash"
 
 # Extract FASTA consensus sequences from bed data
-%.mirmut:Q: %.fa.consensus
+%.mirna.fa:Q: %.fa.consensus
 	bed=$(find -L . -type f -name "*.bed")
 	echo "[DEBUG] Processing bed: $bed"
 	tail -n +2 $bed | cut -f 1-6  > $bed.tmp
