@@ -1,0 +1,7 @@
+MKSHELL="/bin/bash"
+
+#target:Q: prereq
+#Pass args to R
+%.ref:Q: %.mirmapid %.tsid
+	echo "[DEBUG] Writing dataframe"
+	Rscript --vanilla Compare_miRNA_targets.R $prereq $target
