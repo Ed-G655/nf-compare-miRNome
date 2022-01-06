@@ -179,7 +179,7 @@ process Make_targetscan_ids {
 }
 
 /* Process Compare_targets */
-process Compare_targets {
+process Compare_ref_targets {
 
   publishDir"${results_dir}/compare_targets/", mode:"copy"
 
@@ -189,7 +189,26 @@ process Compare_targets {
 	file mk_files
 
   output:
-  file "*targets*"
+  file "*.ref"
+
+	"""
+	bash runmk.sh
+	"""
+}
+
+
+/* Process Compare_targets */
+process Compare_mut_targets {
+
+  publishDir"${results_dir}/compare_targets/", mode:"copy"
+
+  input:
+	file mirmapid
+	file tsid
+	file mk_files
+
+  output:
+  file "*.mut"
 
 	"""
 	bash runmk.sh
