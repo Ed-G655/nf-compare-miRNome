@@ -77,7 +77,7 @@ process _pre1_split_chromosomes {
 	file mk_files
 
 	output:
-	file "*.chunk*"
+	file "*.vcf.gz"
 
 	"""
 	bash runmk.sh
@@ -113,7 +113,7 @@ process _001A_extract_mirna_FASTA_ref {
 	file fasta
 	file mk_files
 	output:
-	file "*.mirref"
+	file "*.mirna.fa"
 
 	"""
 	bash runmk.sh
@@ -132,7 +132,7 @@ process _001B_extract_mirna_FASTA_mut {
 	file fasta_consensus
 	file mk_files
 	output:
-	file "*.mirmut"
+	file "*.mirna.fa"
 
 	"""
 	bash runmk.sh
@@ -176,24 +176,6 @@ process _002B_extract_utr_FASTA_mut {
 	"""
 }
 
-
-/*_01A_merge_mirref_fastas */
-
-process _01A_merge_mirref_fastas {
-
-	publishDir "${results_dir}/mirref_fastas/",mode:"copy"
-
-	input:
-	file mirna_FASTAs
-
-	output:
-	file "*.mirna.fa"
-
-	"""
- cat *.mirref | grep . > all_ref.mirna.fa
-	"""
-}
-
 /*_02A_merge_utrref_fastas */
 
 process _02A_merge_utrref_fastas {
@@ -206,23 +188,6 @@ process _02A_merge_utrref_fastas {
 	file "*.utr.fa"
 	"""
  cat *.utrref | grep . > all_ref.utr.fa
-	"""
-}
-
- /*_01B_merge_mirmut_fastas */
-
-process _01B_merge_mirmut_fastas {
-
-	publishDir "${results_dir}/merge_mirmut_fastas/",mode:"copy"
-
-	input:
-	file mirna_FASTAs
-
-	output:
-	file "*.mirna.fa"
-
-	"""
- cat *.mirmut | grep . > all_mut.mirna.fa
 	"""
 }
 
