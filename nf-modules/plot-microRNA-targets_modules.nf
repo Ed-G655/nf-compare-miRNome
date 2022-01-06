@@ -74,14 +74,14 @@ process miRNome_changes {
 	input:
 	file ref_targets
 	file mut_targets
-	file Rscript
+	file mk_files
 
 	output:
-	file "*.changes"
+	path '*.changes', emit: changes_file
 	file "*.png"
 
 	"""
-	Rscript --vanilla Compare_mutate_targets.R ${ref_targets[0]} ${mut_targets[0]} ${ref_targets[0].baseName}.changes
+	bash runmk.sh
 	"""
 
 }
@@ -106,6 +106,7 @@ process pos2_convert_target_file {
 
 /* 001_butterfly-plot-target-changes */
 process pos3_butterfly_plot_target_changes {
+	errorStrategy 'ignore'
 
 	publishDir "${results_dir}/pos3_butterfly_plot_target_changes/",mode:"copy"
 
@@ -125,6 +126,7 @@ process pos3_butterfly_plot_target_changes {
 /* plot-target-changes */
 
 process pos4_plot_target_changes_count {
+	errorStrategy 'ignore'
 
 	publishDir "${results_dir}/pos4_plot_target_changes_count/",mode:"copy"
 
