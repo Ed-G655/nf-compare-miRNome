@@ -80,5 +80,5 @@ gain_and_lost.p
 ggsave( filename = mirna_mut_file,
         plot = gain_and_lost.p,
         device = "png",
-        height = 7, width = 14,
+        height = 14, width = 28,
         units = "in")
