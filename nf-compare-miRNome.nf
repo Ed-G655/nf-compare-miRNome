@@ -36,9 +36,7 @@ _pre4_extract_utr_FASTA_ref
 _pre5_extract_utr_FASTA_ref
 _pre6_extract_mirna_FASTA_mut
 _pre7_extract_utr_FASTA_mut
-_pre8_merge_mirref_fastas
 _pre9_merge_utrref_fastas
-_pre10_merge_mirmut_fastas
 _pre11_merge_utrmut_fastas
 
 Core-processing:
@@ -370,16 +368,23 @@ Channel
 /* Process _Ccompare_mirna_targets */
 /* Read mkfile module files */
 Channel
-			.fromPath("${workflow.projectDir}/mkmodules/2_compare-miRNA-pairs/mk-compare-targets-venndiagram/*")
+			.fromPath("${workflow.projectDir}/mkmodules/2_compare-miRNA-pairs/mk-compare-ref-targets-venndiagram/*")
 			.toList()
 			.set { mkfiles_core_7 }
+
+/* Process _Ccompare_mirna_targets */
+/* Read mkfile module files */
+Channel
+	.fromPath("${workflow.projectDir}/mkmodules/2_compare-miRNA-pairs/mk-compare-mut-targets-venndiagram/*")
+	.toList()
+	.set { mkfiles_core_8 }
 
 /* Pos_compare_mirnatargets */
 /* Read mkfile module files */
 Channel
-	.fromPath("${workflow.projectDir}/mkmodules/3_analyze-miRNome/mk-compare-mirnatargets/Compare_mutate_targets.R/*")
+	.fromPath("${workflow.projectDir}/mkmodules/3_analyze-miRNome/mk-compare-mirnatargets/*")
 	.toList()
-	.set{ Rscript_pos }
+	.set{ mkfiles_pos1 }
 /* _pos2_convert_target_file */
 	/* Read mkfile module files */
 Channel
@@ -408,9 +413,7 @@ include {  _pre1_split_chromosomes;
 					_001B_extract_mirna_FASTA_mut;
 					_002A_extract_utr_FASTA_ref;
 					_002B_extract_utr_FASTA_mut;
-					_01A_merge_mirref_fastas;
 					_02A_merge_utrref_fastas;
-					_01B_merge_mirmut_fastas;
 					_02B_merge_utrmut_fastas
 					} from './nf-modules/extract-sequences_modules.nf'
 
@@ -427,8 +430,8 @@ include { Run_miRmap;
 					Run_targetscan as Run_targetscan_AGAIN;
 					Make_targetscan_ids;
 					Make_targetscan_ids as Make_targetscan_ids_AGAIN;
-					Compare_targets;
-					Compare_targets as Compare_targets_AGAIN } from './nf-modules/compare-miRNA-pairs_modules.nf'
+					Compare_ref_targets;
+					Compare_mut_targets } from './nf-modules/compare-miRNA-pairs_modules.nf'
 
 
 include { miRNome_changes;
@@ -467,20 +470,16 @@ workflow  {
 																				_pre2_make_consensus_sequence.out,
 																				utrbed_input,
 																				mkfiles_002B)
-						// Pos 1A: Merge miRNA reference utr_FASTAs
-						_01A_merge_mirref_fastas(_001A_extract_mirna_FASTA_ref.out)
 						// Pos 2A: Merge UTR reference FASTAs
 						_02A_merge_utrref_fastas(_002A_extract_utr_FASTA_ref.out)
-						// Pos !B: Merge miRNA mutate FASTAs
-						_01B_merge_mirmut_fastas(_001B_extract_mirna_FASTA_mut.out)
 						// POs 2B: Merge UTR mutate FASTAs
 						_02B_merge_utrmut_fastas(_002B_extract_utr_FASTA_mut.out)
 						// CORE_REF: Run mirmap with reference sequences
-						Run_miRmap(	_01A_merge_mirref_fastas.out,
+						Run_miRmap(	_001A_extract_mirna_FASTA_ref.out,
 												_02A_merge_utrref_fastas.out,
 												mkfiles_core_1)
 						// CORE_MUT: Run mirmap with mutate sequences
-						Run_miRmap_AGAIN(	_01B_merge_mirmut_fastas.out,
+						Run_miRmap_AGAIN(	_001B_extract_mirna_FASTA_mut.out,
 															_02B_merge_utrmut_fastas.out,
 															mkfiles_core_1)
 						// CORE_2A: Make mirmap ids REF sequences
@@ -490,10 +489,10 @@ workflow  {
 						Make_mirmap_ids_AGAIN(Run_miRmap_AGAIN.out,
 																	mkfiles_core_2)
 						// CORE_3A: Convert_mirna_data_to_targetscan
-						Convert_mirna_data_to_targetscan(	_01A_merge_mirref_fastas.out,
+						Convert_mirna_data_to_targetscan(	_001A_extract_mirna_FASTA_ref.out,
 																							mkfiles_core_3)
 						// CORE_3A: Convert_mirna_data_to_targetscan
-						Convert_mirna_data_to_targetscan_AGAIN(	_01B_merge_mirmut_fastas.out,
+						Convert_mirna_data_to_targetscan_AGAIN(	_001B_extract_mirna_FASTA_mut.out,
 																										mkfiles_core_3)
 						// CORE_4A: Convert_utr_data_to_targetscan REF
 						Convert_utr_data_to_targetscan(_02A_merge_utrref_fastas.out,
@@ -516,17 +515,17 @@ workflow  {
 						Make_targetscan_ids_AGAIN(	Run_targetscan_AGAIN.out,
 																				mkfiles_core_6)
 						// Core 7: Compare_targets REF
-						REF_targets = Compare_targets(	Make_mirmap_ids.out,
+						REF_targets = Compare_ref_targets(	Make_mirmap_ids.out,
 															Make_targetscan_ids.out,
 															mkfiles_core_7)
 						// Core 7: Compare_targets REF
-						MUT_targets = Compare_targets_AGAIN(	Make_mirmap_ids_AGAIN.out,
+						MUT_targets = Compare_mut_targets(	Make_mirmap_ids_AGAIN.out,
 															Make_targetscan_ids_AGAIN.out,
-															mkfiles_core_7)
+															mkfiles_core_8)
 						// Pos 1: miRNome_changes
-						miRNome_changes(REF_targets, MUT_targets, Rscript_pos)
+						miRNome_changes(REF_targets, MUT_targets, mkfiles_pos1)
 						// Pos 2: Convert
-						pos2_convert_target_file(miRNome_changes.out[0], mkfiles_pos2)
+						pos2_convert_target_file(miRNome_changes.out.changes_file, mkfiles_pos2)
 						// Pos 3:001_butterfly-plot-target-changes
 						pos3_butterfly_plot_target_changes(pos2_convert_target_file.out,mkfiles_pos3)
 						// Pos 4:pos4_plot_target_changes_count
