@@ -24,42 +24,28 @@ Authors:
 - Nextflow Port
  Jose Eduardo Garcia-Lopez (jeduardogl655@gmail.com)
 
-
-=============================
-Pipeline Processes In Brief:
-
 Pre-processing:
-_pre1_split_chromosomes
-_pre2_make_consensus_sequence
-_pre3_extract_mirna_FASTA_ref
-_pre4_extract_utr_FASTA_ref
-_pre5_extract_utr_FASTA_ref
-_pre6_extract_mirna_FASTA_mut
-_pre7_extract_utr_FASTA_mut
-_pre9_merge_utrref_fastas
-_pre11_merge_utrmut_fastas
+PRE1-CONVERT_GFF_TO_BED
+PRE2-EXTRACT_MIRNA_SEED
+PRE3-Grep maturer microRNAs
+PRE4-INTERSECT_BED_VCF
+PRE5-EXTRACT_BIALLELIC_SNPs
+PRE6-SPLIT_VCF
+PRE7-VCF_CONSENSUS_SEQ
+PRE8-EXTRACT_FASTA
+PRE9-CONVERT_miRNA_TO_TARGETSCAN
+PRE10-CONVERT_UTR_TO_TARGETSCAN
+PRE11-CONVERT_UTR_TO_TARGETSCAN
+PRE12-CLASSIFY_SNPs_BY_REGION
 
 Core-processing:
-CORE_1_REF_tun_mirmap
-CORE_1_MUT_tun_mirmap
-CORE_2A_Make_mirmap_ids
-CORE_2B_Make_mirmap_ids
-CORE_3A_Convert_mirna_data_to_targetscan
-CORE_3B_Convert_mirna_data_to_targetscan
-CORE_4A_Convert_utr_data_to_targetscan
-CORE_4B_Convert_utr_data_to_targetscan
-CORE_5A_Run_targetscan_REF
-CORE_5B_Run_targetscan_MUT
-Core_6A_Make_targetscan_IDs_REF
-Core_6B_Make_targetscan_IDs_MUT
-Core 7_Compare_targets_REF
-Core 8_Compare_targets_MUT
+CORE1-RUN_TARGETSCAN_REF
+CORE2-RUN_TARGETSCAN_ALT
+CORE3-RUN-MIRMAP REF
+CORE4-RUN-MIRMAP ALT
 
-Pos-processing:
-Pos_1_miRNome_changes
-Pos_2_convert_target_file
-Pos_3_butterfly-plot-target-changes
-Pos_4_plot_target_changes_count
+Pos-processing
+Pos1-COMPARE_TARGETS
 
 Analysis:
 
@@ -75,10 +61,10 @@ def helpMessage() {
 
 	Usage:
 
-	nextflow run ${pipeline_name}.nf --mirnabed <path to input 1> --utrbed <path to input 2>
+	nextflow run ${pipeline_name}.nf --mirna_gff <path to input 1> --utrbed <path to input 2>
   --vcf <path to input 3> --fasta <path to input 4>   [--output_dir path to results ]
 
-	  --mirnabed	<- miRNA bed file;
+		--mirna_gff	<- miRNA gff file;
 
 	  --utrbed	<- UTR bed file;
 
@@ -118,7 +104,7 @@ pipeline_name = "nf-compare-miRNome.nf"
   Initiate default values for parameters
   to avoid "WARN: Access to undefined parameter" messages
 */
-params.mirnabed = false  //if no inputh path is provided, value is false to provoke the error during the parameter validation block
+params.mirna_gff = false  //if no inputh path is provided, value is false to provoke the error during the parameter validation block
 params.utrbed = false  //if no inputh path is provided, value is false to provoke the error during the parameter validation block
 params.vcf = false  //if no inputh path is provided, value is false to provoke the error during the parameter validation block
 params.fasta_dir = false  //if no inputh path is provided, value is false to provoke the error during the parameter validation block
@@ -174,9 +160,9 @@ try {
     if it was not provided, it keeps the 'false' value assigned in the parameter initiation block above
     and this test fails
 */
-if ( !params.mirnabed | !params.utrbed | !params.vcf | !params.fasta_dir ) {
-  log.error " Please provide the --mirnabed AND --utrbed AND --vcf --fasta \n\n" +
-  " For more information, execute: nextflow run extract-sequences.nf --help"
+if ( !params.mirna_gff | !params.utrbed | !params.vcf | !params.fasta_dir ) {
+  log.error " Please provide the --mirna_gff AND --utrbed AND --vcf --fasta \n\n" +
+  " For more information, execute: nextflow run ${pipeline_name} --help"
   exit 1
 }
 
@@ -184,7 +170,7 @@ if ( !params.mirnabed | !params.utrbed | !params.vcf | !params.fasta_dir ) {
 Output directory definition
 Default value to create directory is the parent dir of --input_dir
 */
-params.output_dir = file(params.mirnabed).getParent() //!! maybe creates bug, should check
+params.output_dir = file(params.mirna_gff).getParent() //!! maybe creates bug, should check
 
 /*
   Results and Intermediate directory definition
@@ -228,7 +214,7 @@ log.info "\n\n--Pipeline Parameters--"
 /* define function to store nextflow metadata summary info */
 def pipelinesummary = [:]
 /* log parameter values beign used into summary */
-pipelinesummary['Input miRNA bed']			= params.mirnabed
+pipelinesummary['Input miRNA bed']			= params.mirna_gff
 pipelinesummary['Input 3UTR bed']			= params.utrbed
 pipelinesummary['Input VCF']			= params.vcf
 pipelinesummary['Input FASTA Dir']			= params.fasta_dir
@@ -249,6 +235,13 @@ nextflow.enable.dsl=2
 	READ GENERAL INPUTS
 */
 
+	/* Load GFF file into channel */
+
+/* Process _001A_extract_mirna_FASTA_ref */
+Channel
+	.fromPath( "${params.mirna_gff}" )
+	.set{ gff_input }
+
 /* _pre1_split_chromosomes */
 /* Load VCF file into channel */
 Channel
@@ -259,14 +252,8 @@ Channel
 /* Load FASTA files into channel */
 Channel
 	.fromPath( "${params.fasta_dir}*.fa" )
-	.toList()
 	.set{ fasta_input }
 
-/* Process _001A_extract_mirna_FASTA_ref */
-/* Load mirna bed file into channel */
-Channel
-.fromPath( "${params.mirnabed}" )
-.set{ mirnabed_input}
 
 /*_002A_extract_utr_FASTA_ref
 /* Load utr bed file into channel */
@@ -276,259 +263,159 @@ Channel
 
 
 /*
-	READ mk-files
+ Load R fileS
 */
 
-/* _pre1_split_chromosomes */
-/* Read mkfile module files */
+/* R_script_1 */
 Channel
-	.fromPath("${workflow.projectDir}/mkmodules/1_extract_FASTAs/mk-split-chromosomes/*")
-	.toList()
-	.set{ mk_files }
+	.fromPath( "./modules/pre/extract-mirna-seed/extract_mirna_seed.R" )
+	.set{ R_script_1 }
 
-/* Process _pre2_make_consensus_sequence
-/* Read mkfile module files */
+/* R_script_2 */
 Channel
-	.fromPath("${workflow.projectDir}/mkmodules/1_extract_FASTAs/make-consensus-sequence/*")
-	.toList()
-	.set { mkfiles_pre2 }
+	.fromPath( "./modules/pre/convert-miRNA-to-targetscan/convert_mirna_data_to_targetscan.R" )
+	.set{ R_script_2 }
 
-/* Process _001A_extract_mirna_FASTA_ref */
-/* Read mkfile module files */
+/* R_script_3*/
 Channel
-	.fromPath("${workflow.projectDir}/mkmodules/1_extract_FASTAs/mk-extract-mirna-FASTA-reference/*")
-	.toList()
-	.set{ mkfiles_001A }
+	.fromPath( "./modules/pre/convert-UTR-to-targetscan/convert_utr_data_to_targetscan.R" )
+	.set{ R_script_3 }
 
-/*_001B_extract_mirna_FASTA_mut
-/* Read mkfile module files */
+/* R_script_4*/
 Channel
-	.fromPath("${workflow.projectDir}/mkmodules/1_extract_FASTAs/mk-extract-mirna-FASTA-consensus/*")
-	.toList()
-	.set{ mkfiles_001B }
+	.fromPath( "./modules/pre/classify-snps-by-region/clasify_SNPs_by_region.R" )
+	.set{ R_script_4 }
 
-/*_002A_extract_utr_FASTA_ref
-/* Read mkfile module files */
-Channel
-	.fromPath("${workflow.projectDir}/mkmodules/1_extract_FASTAs/mk-extract-utr-FASTA-reference/*")
-	.toList()
-	.set{ mkfiles_002A }
 
-/*_002B_extract_utr_FASTA_mut
-/* Read mkfile module files */
+/* R_script_5*/
 Channel
-	.fromPath("${workflow.projectDir}/mkmodules/1_extract_FASTAs/mk-extract-utr-FASTA-consensus/*")
-	.toList()
-	.set{ mkfiles_002B }
+	.fromPath( "./modules/pos/cat-ref-targets/cat_targets.r" )
+	.set{ R_script_5}
 
-	/*//////// Compare miRNAs inputs ////////////*
-
-/*	Run_miRmap	*/
-/* Read mkfile module files */
-Channel
-	.fromPath("${workflow.projectDir}/mkmodules/2_compare-miRNA-pairs/mk-run-miRmap/*")
-	.toList()
-	.set{ mkfiles_core_1 }
-
-/* Process _Core2_make_mirmap_ids */
-/* Read mkfile module files */
-Channel
-		.fromPath("${workflow.projectDir}/mkmodules/2_compare-miRNA-pairs/mk-make-mirmap-ids/*")
-		.toList()
-		.set { mkfiles_core_2 }
-
-/* Convert_mirna_data_to_targetscan
-/* Read mkfile module files */
-Channel
-		.fromPath("${workflow.projectDir}/mkmodules/2_compare-miRNA-pairs/mk-convert-mirna-data-to-targetscan/*")
-		.toList()
-		.set{ mkfiles_core_3 }
-
-/*  Process _Convert_utr_data_to_targetscan */
-/* Read mkfile module files */
-Channel
-		 .fromPath("${workflow.projectDir}/mkmodules/2_compare-miRNA-pairs/mk-convert-utr-data-to-targetscan/*")
-		 .toList()
-		 .set{ mkfiles_core_4 }
-
-/* Process Run_targetscan */
-/* Read mkfile module files */
-Channel
-		  .fromPath("${workflow.projectDir}/mkmodules/2_compare-miRNA-pairs/mk-run-targetscan/*")
-		 	.toList()
-		 	.set { mkfiles_core_5 }
-
-/* Process _B_pre_4_make_targetscan_ids */
-/* Read mkfile module files */
-Channel
-			.fromPath("${workflow.projectDir}/mkmodules/2_compare-miRNA-pairs/mk-make-targetscan-ids/*")
-			.toList()
-			.set { mkfiles_core_6}
-
-/* Process _Ccompare_mirna_targets */
-/* Read mkfile module files */
-Channel
-			.fromPath("${workflow.projectDir}/mkmodules/2_compare-miRNA-pairs/mk-compare-ref-targets-venndiagram/*")
-			.toList()
-			.set { mkfiles_core_7 }
-
-/* Process _Ccompare_mirna_targets */
-/* Read mkfile module files */
-Channel
-	.fromPath("${workflow.projectDir}/mkmodules/2_compare-miRNA-pairs/mk-compare-mut-targets-venndiagram/*")
-	.toList()
-	.set { mkfiles_core_8 }
-
-/* Pos_compare_mirnatargets */
-/* Read mkfile module files */
-Channel
-	.fromPath("${workflow.projectDir}/mkmodules/3_analyze-miRNome/mk-compare-mirnatargets/*")
-	.toList()
-	.set{ mkfiles_pos1 }
-/* _pos2_convert_target_file */
-	/* Read mkfile module files */
-Channel
-	.fromPath("${workflow.projectDir}/mkmodules/3_analyze-miRNome/mk-convert-target-file/*")
-	.toList()
-	.set{ mkfiles_pos2}
-	/* 001_butterfly-plot-target-changes */
-	/* Read mkfile module files */
+	/* R_script_6*/
 	Channel
-		.fromPath("${workflow.projectDir}/mkmodules/3_analyze-miRNome/mk-butterfly-plot-target-changes/*")
-		.toList()
-		.set{mkfiles_pos3}
+		.fromPath( "./modules/pos/compare-targets/compare_targets.r" )
+		.set{ R_script_6}
 
-/* plot-target-changes */
-/* Read mkfile module files */
+	/* Load TargetScan script */
 Channel
-	.fromPath("${workflow.projectDir}/mkmodules/3_analyze-miRNome/mk-plot-target-changes-count/*")
-	.toList()
-	.set{mkfiles_pos4}
+	.fromPath( "./modules/core/run-targetscan/targetscan_70.pl" )
+	.set{ TargetScan_script }
 
+/* Load miRmap script */
+Channel
+	.fromPath( "./modules/core/run-mirmap/mirmap_script.py" )
+	.set{ miRmap_script }
 
-/*	 * Import modules */
-include {  _pre1_split_chromosomes;
-					_pre2_make_consensus_sequence;
-					_001A_extract_mirna_FASTA_ref;
-					_001B_extract_mirna_FASTA_mut;
-					_002A_extract_utr_FASTA_ref;
-					_002B_extract_utr_FASTA_mut;
-					_02A_merge_utrref_fastas;
-					_02B_merge_utrmut_fastas
-					} from './nf-modules/extract-sequences_modules.nf'
+/* Load vcf_split.py script */
+	Channel
+		.fromPath( "./modules/pre/split-vcf/split_vcf.py" )
+		.set{ split_vcf_script }
 
+	/*	  Import modules */
+											/* PRE-processing */
+include {	CONVERT_GFF_TO_BED	} from './modules/pre/convert-gff-to-bed/main.nf'
+include {	GREP_MATURE_MICRORNA	} from './modules/pre/grep-mature-mirnas/main.nf'
+include {EXTRACT_BIALLELIC_SNPs} from './modules/pre/extract-biallelic-snps/main.nf'
+include {	EXTRACT_MIRNA_SEED	} from './modules/pre/extract-mirna-seed/main.nf'
+include {	INTERSECT_BED_VCF	} from './modules/pre/intersect-bed-vcf/main.nf'
+include {	INTERSECT_BED_VCF as INTERSECT_SEED_BED_VCF	} from './modules/pre/intersect-bed-vcf/main.nf'
+include {WRITE_SEED_VCF} from './modules/pre/write-seed-vcf/main.nf'
+include {SPLIT_VCF} from './modules/pre/split-vcf/main.nf'
+include {VCF_CONSENSUS_SEQ} from './modules/pre/vcf-consensus-seq/main.nf'
+include{EXTRACT_MIRNA_FASTA} from './modules/pre/extract-mirna-fastas/main.nf'
+include{EXTRACT_MIRNA_FASTA as EXTRACT_MIRNA_ALT_FASTA} from './modules/pre/extract-mirna-fastas/main.nf'
+include{EXTRACT_UTR_FASTA} from './modules/pre/extract-utr-fastas/main.nf'
+include{EXTRACT_UTR_FASTA as EXTRACT_UTR_ALT_FASTA} from './modules/pre/extract-utr-fastas/main.nf'
+include{CONVERT_miRNA_TO_TARGETSCAN} from './modules/pre/convert-miRNA-to-targetscan/main.nf'
+include{CONVERT_miRNA_TO_TARGETSCAN as CONVERT_miRNA_TO_TARGETSCAN_ALT} from './modules/pre/convert-miRNA-to-targetscan/main.nf'
+include{CAT_UTRs} from './modules/pre/cat-utr-data/main.nf'
+include{CAT_UTRs_ALT} from './modules/pre/cat-utr-alt-data/main.nf'
+include{CONVERT_UTR_TO_TARGETSCAN} from './modules/pre/convert-UTR-to-targetscan/main.nf'
+include{CONVERT_UTR_TO_TARGETSCAN as CONVERT_UTR_TO_TARGETSCAN_ALT} from './modules/pre/convert-UTR-to-targetscan/main.nf'
+include{CLASSIFY_SNPs_BY_REGION} from './modules/pre/classify-snps-by-region/main.nf'
 
-include { Run_miRmap;
-	 				Run_miRmap as Run_miRmap_AGAIN;
-					Make_mirmap_ids;
-					Make_mirmap_ids as Make_mirmap_ids_AGAIN;
-					Convert_mirna_data_to_targetscan;
-					Convert_mirna_data_to_targetscan as Convert_mirna_data_to_targetscan_AGAIN;
-					Convert_utr_data_to_targetscan;
-					Convert_utr_data_to_targetscan as Convert_utr_data_to_targetscan_AGAIN;
-					Run_targetscan;
-					Run_targetscan as Run_targetscan_AGAIN;
-					Make_targetscan_ids;
-					Make_targetscan_ids as Make_targetscan_ids_AGAIN;
-					Compare_ref_targets;
-					Compare_mut_targets } from './nf-modules/compare-miRNA-pairs_modules.nf'
+								/* CORE-processing */
+include{RUN_TARGETSCAN} from './modules/core/run-targetscan/main.nf'
+include{RUN_TARGETSCAN as  RUN_TARGETSCAN_ALT} from './modules/core/run-targetscan/main.nf'
+include{CAT_TARGETSCAN_REF} from './modules/core/cat-ref-targetscan/main.nf'
+include{CAT_TARGETSCAN_ALT} from './modules/core/cat-alt-targetscan/main.nf'
+include{RUN_MIRMAP} from './modules/core/run-mirmap/main.nf'
+include{RUN_MIRMAP as RUN_MIRMAP_ALT} from './modules/core/run-mirmap/main.nf'
 
+/*POS */
+include{CAT_REF_TARGETS} from './modules/pos/cat-ref-targets/main.nf'
+include{CAT_ALT_TARGETS} from './modules/pos/cat-alt-targets/main.nf'
+include{COMPARE_TARGETS} from './modules/pos/compare-targets/main.nf'
+/*
+include{RUN_TARGETSCAN_REF} from './modules/run-targetscan/main.nf'
+include{RUN_TARGETSCAN_ALT} from './modules/run-targetscan-alt/main.nf'
+include{EULERR_TARGETS} from './modules/eulerr-targets/main.nf'
+include{MIRNA_NETWORK} from './modules/microRNA-network/main.nf'
+include{MIRNA_NETWORK as MIRNA_ALT_NETWORK} from './modules/microRNA-network/main.nf'
+include{MIRNA_NETWORK_CHANGES} from './modules/miRNA-network-changes/main.nf'
+*/
 
-include { miRNome_changes;
-	pos2_convert_target_file;
-	pos3_butterfly_plot_target_changes;
-	pos4_plot_target_changes_count } from './nf-modules/plot-microRNA-targets_modules.nf'
 
 /*  main pipeline logic */
 workflow  {
-						// PRE 1: Split VCF file
-						_pre1_split_chromosomes(
-																		vcf_input,
-																		mk_files)
-						// PŔE 2: Make consensus FASTA sequence
-						_pre2_make_consensus_sequence(
-																					_pre1_split_chromosomes.out,
-																					fasta_input,
-																					mkfiles_pre2)
-						// COre 1A: Extract miRNA FASTA reference sequences
-						_001A_extract_mirna_FASTA_ref(
-																					fasta_input,
-																					mirnabed_input,
-																					mkfiles_001A)
-						// Core 1B: Extract miRNA FASTA mutate sequences
-						_001B_extract_mirna_FASTA_mut(
-																					_pre2_make_consensus_sequence.out,
-																					mirnabed_input,
-																					mkfiles_001B)
-						// Core 2A: Extract UTR FASTA reference sequences
-						_002A_extract_utr_FASTA_ref(
-																				fasta_input,
-																				utrbed_input,
-																				mkfiles_002A)
-						// Core 2B: Extract UTR FASTA mutate sequences
-						_002B_extract_utr_FASTA_mut(
-																				_pre2_make_consensus_sequence.out,
-																				utrbed_input,
-																				mkfiles_002B)
-						// Pos 2A: Merge UTR reference FASTAs
-						_02A_merge_utrref_fastas(_002A_extract_utr_FASTA_ref.out)
-						// POs 2B: Merge UTR mutate FASTAs
-						_02B_merge_utrmut_fastas(_002B_extract_utr_FASTA_mut.out)
-						// CORE_REF: Run mirmap with reference sequences
-						Run_miRmap(	_001A_extract_mirna_FASTA_ref.out,
-												_02A_merge_utrref_fastas.out,
-												mkfiles_core_1)
-						// CORE_MUT: Run mirmap with mutate sequences
-						Run_miRmap_AGAIN(	_001B_extract_mirna_FASTA_mut.out,
-															_02B_merge_utrmut_fastas.out,
-															mkfiles_core_1)
-						// CORE_2A: Make mirmap ids REF sequences
-						Make_mirmap_ids(Run_miRmap.out,
-														mkfiles_core_2)
-						// CORE_2B: Make mirmap ids MUT sequences
-						Make_mirmap_ids_AGAIN(Run_miRmap_AGAIN.out,
-																	mkfiles_core_2)
-						// CORE_3A: Convert_mirna_data_to_targetscan
-						Convert_mirna_data_to_targetscan(	_001A_extract_mirna_FASTA_ref.out,
-																							mkfiles_core_3)
-						// CORE_3A: Convert_mirna_data_to_targetscan
-						Convert_mirna_data_to_targetscan_AGAIN(	_001B_extract_mirna_FASTA_mut.out,
-																										mkfiles_core_3)
-						// CORE_4A: Convert_utr_data_to_targetscan REF
-						Convert_utr_data_to_targetscan(_02A_merge_utrref_fastas.out,
-																						mkfiles_core_4)
-						// CORE_4b: Convert_utr_data_to_targetscan mut
-						Convert_utr_data_to_targetscan_AGAIN(	_02B_merge_utrmut_fastas.out,
-																									mkfiles_core_4)
-						// CORE_5A: Run_targetscan REF
-						Run_targetscan(	Convert_mirna_data_to_targetscan.out,
-														Convert_utr_data_to_targetscan.out,
-														mkfiles_core_5)
-						// CORE_5B: Run_targetscan mut
-						Run_targetscan_AGAIN(	Convert_mirna_data_to_targetscan_AGAIN.out,
-														Convert_utr_data_to_targetscan_AGAIN.out,
-														mkfiles_core_5)
-						// Core 6A: Make targetscan IDs  REF
-						Make_targetscan_ids(	Run_targetscan.out,
-																	mkfiles_core_6)
-						// Core 6B: Make targetscan IDs  MUT
-						Make_targetscan_ids_AGAIN(	Run_targetscan_AGAIN.out,
-																				mkfiles_core_6)
-						// Core 7: Compare_targets REF
-						REF_targets = Compare_ref_targets(	Make_mirmap_ids.out,
-															Make_targetscan_ids.out,
-															mkfiles_core_7)
-						// Core 7: Compare_targets REF
-						MUT_targets = Compare_mut_targets(	Make_mirmap_ids_AGAIN.out,
-															Make_targetscan_ids_AGAIN.out,
-															mkfiles_core_8)
-						// Pos 1: miRNome_changes
-						miRNome_changes(REF_targets, MUT_targets, mkfiles_pos1)
-						// Pos 2: Convert
-						pos2_convert_target_file(miRNome_changes.out.changes_file, mkfiles_pos2)
-						// Pos 3:001_butterfly-plot-target-changes
-						pos3_butterfly_plot_target_changes(pos2_convert_target_file.out,mkfiles_pos3)
-						// Pos 4:pos4_plot_target_changes_count
-						pos4_plot_target_changes_count(pos2_convert_target_file.out,mkfiles_pos4)
+/* PRE-processing */
+						// PRE 1: CONVERT_GFF_TO_BED
+						CONVERT_GFF_TO_BED(gff_input)
+						// PRE 2: extract miRNA  seed from BED file
+						EXTRACT_MIRNA_SEED(CONVERT_GFF_TO_BED.out, R_script_1)
+						// PRE 3: Grep maturer microRNAs
+						GREP_MATURE_MICRORNA(CONVERT_GFF_TO_BED.out)
+						// PRE 4: INTERSECT_BED_VCF intersect mature and primary miRNAs and VCF file
+						MATURE_INTERSECT = INTERSECT_BED_VCF(CONVERT_GFF_TO_BED.out, vcf_input)
+						// PRE 4: INTERSECT_BED_VCF intersect seed miRNAs and VCF file
+						SEED_INTERSECT = INTERSECT_SEED_BED_VCF(EXTRACT_MIRNA_SEED.out, vcf_input)
+						// PRE 5: EXTRACT_BIALLELIC_SNPs from VCF file
+						EXTRACT_BIALLELIC_SNPs(vcf_input)
+						// PRE 6: Split VCF per Chromosome
+						SPLIT_VCF(EXTRACT_BIALLELIC_SNPs.out, split_vcf_script)
+						// PRE 7: Write consensus FASTA sequence from VCF variants
+						VCF_CONSENSUS_SEQ(SPLIT_VCF.out.flatten(), fasta_input)
+						// PRE 8: Extract FASTA consensus (ALT) sequence
+						MIRNA_ALT_FASTA = EXTRACT_MIRNA_ALT_FASTA(GREP_MATURE_MICRORNA.out, VCF_CONSENSUS_SEQ.out)
+						UTR_ALT_FASTA = EXTRACT_UTR_ALT_FASTA(utrbed_input, VCF_CONSENSUS_SEQ.out)
+						// PRE 8: Extract FASTA reference sequence
+						MIRNA_REF_FASTA = EXTRACT_MIRNA_FASTA(GREP_MATURE_MICRORNA.out, fasta_input)
+						UTR_REF_FASTA = EXTRACT_UTR_FASTA(utrbed_input, fasta_input)
+						// PRE 9:Convert miRNA data to targetScan INPUT
+						REF_MIRNA = CONVERT_miRNA_TO_TARGETSCAN(MIRNA_REF_FASTA, R_script_2)
+						ALT_MIRNA = CONVERT_miRNA_TO_TARGETSCAN_ALT(MIRNA_ALT_FASTA, R_script_2)
+						// PRE 10: CAT UTR FASTAS
+						CAT_UTR_REF = CAT_UTRs(UTR_REF_FASTA.collect())
+						CAT_UTR_ALT = CAT_UTRs_ALT(UTR_ALT_FASTA.collect())
+						// PRE 11: Convert UTR data to TargetScan INPUT
+						REF_UTR = CONVERT_UTR_TO_TARGETSCAN(CAT_UTR_REF, R_script_3)
+						ALT_UTR = CONVERT_UTR_TO_TARGETSCAN_ALT(CAT_UTR_ALT, R_script_3)
+						// PRE12-CLASSIFY_SNPs_BY_REGION
+						CLASSIFY_SNPs_BY_REGION(MATURE_INTERSECT, SEED_INTERSECT, R_script_4)
+
+/* CORE-processing */
+						// CORE1-RUN_TARGETSCAN_REF
+						TARGETSCAN_REF = RUN_TARGETSCAN(REF_MIRNA, REF_UTR, TargetScan_script)
+						// CORE2-RUN_TARGETSCAN_ALT
+						TARGETSCAN_ALT = RUN_TARGETSCAN_ALT(ALT_MIRNA, ALT_UTR, TargetScan_script)
+						// CORE3-RUN-MIRMAP REF
+						MIRMAP_REF = RUN_MIRMAP(MIRNA_REF_FASTA, CAT_UTR_REF, miRmap_script)
+						// CORE4-RUN-MIRMAP ALT
+						MIRMAP_ALT = RUN_MIRMAP_ALT(MIRNA_ALT_FASTA, CAT_UTR_ALT, miRmap_script)
+
+/* pos-processing */
+						// collect targets outputs
+						T1 = TARGETSCAN_REF.collect()
+						T2 = MIRMAP_REF.collect()
+						// Merge mirmap and targetscan data
+						REF_TARGETS = CAT_REF_TARGETS(T1,T2, CONVERT_GFF_TO_BED.out, R_script_5)
+						// collect targets outputs
+						T3 = TARGETSCAN_ALT.collect()
+						T4 = MIRMAP_ALT.collect()
+						// Merge mirmap and targetscan data
+						ALT_TARGETS = CAT_ALT_TARGETS(T3,T4, CONVERT_GFF_TO_BED.out, R_script_5)
+						// Pos1-COMPARE_TARGETS: Compare REF and ALT targets
+						COMPARE_TARGETS(REF_TARGETS.tsv, ALT_TARGETS.tsv, R_script_6)
 
 }
