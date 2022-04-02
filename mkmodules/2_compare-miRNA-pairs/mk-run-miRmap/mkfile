@@ -1,7 +1,0 @@
-MKSHELL="/bin/bash"
-
-#Find input files and pass to miRmap script
-%.mirmapout:Q: %.mirna.fa
-	echo "[DEBUG] Running miRmap on $prereq"
-	utr_fasta=$(find -L . -type f -name "*.utr.fa")
-	python3 mirmap_script.py $prereq $utr_fasta $target

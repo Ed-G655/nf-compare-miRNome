@@ -1,5 +1,0 @@
-MKSHELL="/bin/bash"
-
-# Make an unique identifier (id) for each target from TargetScan
-%.tsid:Q: %.tsout
-	cut -f 1,2,6,7,9 $prereq | tr "\t" ";" > $target

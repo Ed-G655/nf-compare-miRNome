@@ -1,6 +1,0 @@
-MKSHELL="/bin/bash"
-
-#Pass args to Rscript
-%.utr.txt:Q: %.utr.fa
-	echo "[DEBUG] Converting utr data "
-	Rscript --vanilla convert_utr_data_to_targetscan.R $prereq $target
