@@ -1,0 +1,5 @@
+hsa-miR-125b-2-3p(+) 	CACAAGU	9606
+hsa-miR-4759(+)	AGGACUA	9606
+hsa-miR-6508-5p(+)	CUAGAAA	9606
+hsa-miR-6814-5p(-)	CCCAAGG	9606
+hsa-miR-5692b(-)	AUAAUAU	9606
