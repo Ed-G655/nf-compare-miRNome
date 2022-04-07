@@ -1,15 +1,12 @@
 # nf-compare-miRNome
 
-Nextflow pipeline that compare miRNA targets of miRNA and 3'UTR
-reference and mutate sequences.
+Nextflow pipeline that compare miRNA targets of miRNA and 3'UTR reference and mutate sequences.
 
 Basic idea:
 
-1)  Create a consensus FASTA sequence from VCF file and extract the
-    reference and mutated miRNA and 3'UTR sequences
+1)  Create a consensus FASTA sequence from VCF file and extract the reference and mutated miRNA and 3'UTR sequences
 
-2)  Use miRmap and TargetScan to predict miRNA targets of reference and
-    mutate sequences
+2)  Use miRmap and TargetScan to predict miRNA targets of reference and mutate sequences
 
 3)Compare microRNA targets and calcule changes to plot microRNA target changes
 
@@ -43,11 +40,9 @@ Basic idea:
 |                  [Biopython](https://biopython.org/wiki/Download)                   |            1.79            |    \*\*\*SeqIO (See mirmap_script.py)     |
 | [TargetScan](http://www.targetscan.org/cgi-bin/targetscan/data_download.vert72.cgi) |            7.0             | \*Script included in the pipeline modules |
 
-\* These commands must be accessible from your `$PATH` (*i.e.* you
-should be able to invoke them from your command line).
+\* These commands must be accessible from your `$PATH` (*i.e.* you should be able to invoke them from your command line).
 
-\*\* Plan9 port builds many binaries, but you ONLY need the `mk` utility
-to be accessible from your command line.
+\*\* Plan9 port builds many binaries, but you ONLY need the `mk` utility to be accessible from your command line.
 
 ### Installation
 
@@ -63,15 +58,13 @@ To test compare-miRNA-pairs.nf execution using test data, run:
 
     bash runtest.sh
 
-Your console should print the Nextflow log for the run, once every
-process has been submitted, the following message will appear:
+Your console should print the Nextflow log for the run, once every process has been submitted, the following message will appear:
 
      ======
      Basic pipeline TEST SUCCESSFUL
      ======
 
-compare-miRNA-pairs.nf results for test data should be in the following
-file:
+compare-miRNA-pairs.nf results for test data should be in the following file:
 
     nf-compare-miRNome/test/results/
 
