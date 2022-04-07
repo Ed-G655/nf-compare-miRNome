@@ -19,6 +19,8 @@ test/data/*/intermediate/
 test/data/*/logs/
 test/results*
 test/data/results/*
+test/data/*.fai
+
 
 ## ignore local R datas
 *.Rdata
