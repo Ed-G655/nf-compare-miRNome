@@ -49,8 +49,7 @@ process VCF_CONSENSUS_SEQ {
 	publishDir "${intermediates_dir}/vcf-consensus-seq/",mode:"symlink"
 
 	input:
-	file VCF
-  file FASTA
+	tuple val(vcf_chr), file(FASTA), file(VCF)
 
 	output:
 	file "*.alt.fa"
