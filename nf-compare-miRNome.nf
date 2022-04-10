@@ -374,8 +374,20 @@ workflow  {
 						EXTRACT_BIALLELIC_SNPs(vcf_input)
 						// PRE 6: Split VCF per Chromosome
 						SPLIT_VCF(EXTRACT_BIALLELIC_SNPs.out, split_vcf_script)
+
+						// Define a function to get the Chromosome of each vcf splited file
+						def get_chrom_prefix = { file -> file.baseName.replaceAll(/.vcf/, "") }
+
+						GROUP_VCFs = SPLIT_VCF.out
+													.flatten()
+													.map{ file -> tuple(get_chrom_prefix(file) , file) }
+
+						GROUP_FASTAS = fasta_input.map{ file -> tuple(file.baseName , file) }
+
+						GROUP_BY_CHR_VCF = GROUP_FASTAS.join(GROUP_VCFs)
+
 						// PRE 7: Write consensus FASTA sequence from VCF variants
-						VCF_CONSENSUS_SEQ(SPLIT_VCF.out.flatten(), fasta_input)
+							VCF_CONSENSUS_SEQ(GROUP_BY_CHR_VCF)
 						// PRE 8: Extract FASTA consensus (ALT) sequence
 						MIRNA_ALT_FASTA = EXTRACT_MIRNA_ALT_FASTA(GREP_MATURE_MICRORNA.out, VCF_CONSENSUS_SEQ.out)
 						UTR_ALT_FASTA = EXTRACT_UTR_ALT_FASTA(utrbed_input, VCF_CONSENSUS_SEQ.out)
