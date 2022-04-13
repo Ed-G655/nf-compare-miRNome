@@ -343,18 +343,10 @@ include{CAT_TARGETSCAN_ALT} from './modules/core/cat-alt-targetscan/main.nf'
 include{RUN_MIRMAP} from './modules/core/run-mirmap/main.nf'
 include{RUN_MIRMAP as RUN_MIRMAP_ALT} from './modules/core/run-mirmap/main.nf'
 
-/*POS */
+								/*POS-processing */
 include{CAT_REF_TARGETS} from './modules/pos/cat-ref-targets/main.nf'
 include{CAT_ALT_TARGETS} from './modules/pos/cat-alt-targets/main.nf'
 include{COMPARE_TARGETS} from './modules/pos/compare-targets/main.nf'
-/*
-include{RUN_TARGETSCAN_REF} from './modules/run-targetscan/main.nf'
-include{RUN_TARGETSCAN_ALT} from './modules/run-targetscan-alt/main.nf'
-include{EULERR_TARGETS} from './modules/eulerr-targets/main.nf'
-include{MIRNA_NETWORK} from './modules/microRNA-network/main.nf'
-include{MIRNA_NETWORK as MIRNA_ALT_NETWORK} from './modules/microRNA-network/main.nf'
-include{MIRNA_NETWORK_CHANGES} from './modules/miRNA-network-changes/main.nf'
-*/
 
 
 /*  main pipeline logic */
@@ -375,19 +367,19 @@ workflow  {
 						// PRE 6: Split VCF per Chromosome
 						SPLIT_VCF(EXTRACT_BIALLELIC_SNPs.out, split_vcf_script)
 
-						// Define a function to get the Chromosome of each vcf splited file
+						// Define a function to get the chromosome of each vcf splited file
 						def get_chrom_prefix = { file -> file.baseName.replaceAll(/.vcf/, "") }
-
+						// Build VCF tuple
 						GROUP_VCFs = SPLIT_VCF.out
 													.flatten()
 													.map{ file -> tuple(get_chrom_prefix(file) , file) }
-
-						GROUP_FASTAS = fasta_input.map{ file -> tuple(file.baseName , file) }
-
+						// Tuple FASTA files by chr
+						GROUP_FASTAS = fasta_input.map{ file -> tuple(file.baseName , file) } // This line requires FASTAs to be named by chromosome
+						// join VCFs
 						GROUP_BY_CHR_VCF = GROUP_FASTAS.join(GROUP_VCFs)
 
 						// PRE 7: Write consensus FASTA sequence from VCF variants
-							VCF_CONSENSUS_SEQ(GROUP_BY_CHR_VCF)
+						VCF_CONSENSUS_SEQ(GROUP_BY_CHR_VCF)
 						// PRE 8: Extract FASTA consensus (ALT) sequence
 						MIRNA_ALT_FASTA = EXTRACT_MIRNA_ALT_FASTA(GREP_MATURE_MICRORNA.out, VCF_CONSENSUS_SEQ.out)
 						UTR_ALT_FASTA = EXTRACT_UTR_ALT_FASTA(utrbed_input, VCF_CONSENSUS_SEQ.out)
