@@ -56,9 +56,9 @@ process VCF_CONSENSUS_SEQ {
 
   shell:
 	"""
-  	bcftools index !{VCF}
+  	bcftools index -f !{VCF}
 		fasta_chrom="\$(grep ">" !{FASTA}  | tr -d ">")"
-		vcf_chrom="\$(bcftools query -f '%CHROM\n' !{VCF} | head -1)"
+		vcf_chrom="\$(bcftools query -f '%CHROM\\n' !{VCF} | head -1)"
 		if [ "\${fasta_chrom}" == "\${vcf_chrom}" ]
 		then
 		cat !{FASTA} | bcftools consensus !{VCF} > !{FASTA.baseName}.alt.fa
