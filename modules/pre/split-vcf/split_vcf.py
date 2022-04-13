@@ -3,7 +3,6 @@
 ## Import python libraries
 import sys
 import subprocess
-import multiprocessing as mp
 
 
 ## Read args from command line
@@ -30,20 +29,11 @@ subprocess.call(chroms_list, shell=True)
 
 #Read list of chroms
 chromosomes = open("chroms.txt", "r").readlines()
-
-def split_vcf(vcf):
-    for chrom in chromosomes:
-        """ This function split a compressed VCF file by chromosomes using bcftools """
-        print ("Extracting {} into {}.vcf.gz".format(chrom.replace('\n', ''), chrom.replace('\n', '')))
-        #Dedine command to split vcf file per chrom
-        SPLIT_VCF =  "bcftools view {} {} | bgzip -c > {}.vcf.gz".format(vcf, chrom.replace('\n', ''), chrom.replace('\n', ''))
-        print ("The command used was: " + SPLIT_VCF)
-        #Pass command to shell
-        subprocess.call(SPLIT_VCF, shell=True)
-
-
-pool = mp.Pool(mp.cpu_count())
-
-pool.map(split_vcf, [VCF_file for chrom in chromosomes])
-
-pool.close()
+#content_list = my_file.readlines()
+for chrom in chromosomes:
+     print ("Extracting {} into {}.vcf.gz".format(chrom.replace('\n', ''), chrom.replace('\n', '')))
+     #Dedine command to split vcf file per chrom
+     SPLIT_VCF =  "bcftools view {} {} | bgzip -c > {}.vcf.gz".format(VCF_file, chrom.replace('\n', ''), chrom.replace('\n', ''))
+     print ("The command used was: " + SPLIT_VCF)
+     #Pass command to shell
+     subprocess.call(SPLIT_VCF, shell=True)
