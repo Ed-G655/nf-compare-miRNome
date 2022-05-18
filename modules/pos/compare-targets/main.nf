@@ -32,7 +32,7 @@ Authors:
   Define pipeline Name
   This will be used as a name to include in the results and intermediates directory names
 */
-pipeline_name = "nf-compare-miRNome.nf"
+pipeline_name = "nf-compare-miRNome"
 
 /*This directories will be automatically created by the pipeline to store files during the run
 */
@@ -46,7 +46,7 @@ intermediates_dir = "${params.output_dir}/${pipeline_name}-intermediate/"
 /* PRE1_CONVERT_GFF_TO_BED */
 
 process COMPARE_TARGETS {
-	tag "$REF.baseName"
+	tag "$REF, $ALT"
 
 	publishDir "${results_dir}/compare-targets/",mode:"copy"
 

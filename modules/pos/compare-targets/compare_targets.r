@@ -68,13 +68,13 @@ remained_targets.df <- remained_targets.df  %>%
 
 ## Merge the miRNA targets gained and lost into a single dataframe
 target_changes.df <- full_join(x = lost_targets, y = gain_targets,
-                               by = c("a_Gene_ID","miRNA_ID", "UTR_start",
+                               by = c("GeneID","miRNA_ID", "UTR_start",
                                       "UTR_end", "Site_type", "target", "target_ID",
                                       "chrom") )
 
 ## Merge all miRNA targets ids into a single dataframe
 All_targets.df <- full_join(x = target_changes.df, y = remained_targets.df,
-                            by = c("a_Gene_ID","miRNA_ID", "UTR_start",
+                            by = c("GeneID","miRNA_ID", "UTR_start",
                                    "UTR_end", "Site_type", "target", "target_ID", 
                                    "chrom") )
 
