@@ -32,7 +32,7 @@ Authors:
   Define pipeline Name
   This will be used as a name to include in the results and intermediates directory names
 */
-pipeline_name = "nf-compare-miRNome.nf"
+pipeline_name = "nf-compare-miRNome"
 
 /*This directories will be automatically created by the pipeline to store files during the run
 */
@@ -56,7 +56,7 @@ process VCF_CONSENSUS_SEQ {
 
   shell:
 	"""
-  	bcftools index -f -c !{VCF}
+  	bcftools index -f !{VCF}
 		cat !{FASTA} | bcftools consensus !{VCF} > !{FASTA.baseName}.alt.fa
   """
 
