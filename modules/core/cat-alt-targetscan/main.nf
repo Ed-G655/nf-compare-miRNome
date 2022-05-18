@@ -32,7 +32,7 @@ Authors:
   Define pipeline Name
   This will be used as a name to include in the results and intermediates directory names
 */
-pipeline_name = "nf-compare-miRNome.nf"
+pipeline_name = "nf-compare-miRNome"
 
 /*This directories will be automatically created by the pipeline to store files during the run
 */
@@ -57,11 +57,11 @@ process CAT_TARGETSCAN_ALT {
 
 	shell:
   """
-	tail -n +2 ${TSOUT} > ${TSOUT}.tmp && mv ${TSOUT}.tmp ${TSOUT} \
- | echo "a_Gene_ID\tmiRNA_family_ID\tspecies_ID\tMSA_start\tMSA_end\tUTR_start\tUTR_end\tGroup_num\tSite_type\tmiRNA in this species\tGroup_type\tSpecies_in_this_group\tSpecies_in_this_group_with_this_site_type\tORF_overlap" > header.txt \
- && cat header.txt *.tsout > all_alt_targets.tsv
+	tail -n +2 ${TSOUT} | cut -f cut -f 1,2,6,7,9 > ${TSOUT}.tmp \
+ 	cat *.tmp  > All.tsout
 
 	"""
+
 	stub:
 	"""
 	     touch all_alt_targets.tsv
