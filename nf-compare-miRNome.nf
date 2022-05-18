@@ -289,7 +289,7 @@ Channel
 
 /* R_script_5*/
 Channel
-	.fromPath( "./modules/pos/cat-ref-targets/cat_targets.r" )
+	.fromPath( "./modules/pos/compare-tools/compare_tools.r" )
 	.set{ R_script_5}
 
 	/* R_script_6*/
@@ -338,15 +338,23 @@ include{CLASSIFY_SNPs_BY_REGION} from './modules/pre/classify-snps-by-region/mai
 								/* CORE-processing */
 include{RUN_TARGETSCAN} from './modules/core/run-targetscan/main.nf'
 include{RUN_TARGETSCAN as  RUN_TARGETSCAN_ALT} from './modules/core/run-targetscan/main.nf'
-include{CAT_TARGETSCAN_REF} from './modules/core/cat-ref-targetscan/main.nf'
-include{CAT_TARGETSCAN_ALT} from './modules/core/cat-alt-targetscan/main.nf'
+//include{CAT_TARGETSCAN_REF} from './modules/core/cat-ref-targetscan/main.nf'
+//include{CAT_TARGETSCAN_ALT} from './modules/core/cat-alt-targetscan/main.nf'
 include{RUN_MIRMAP} from './modules/core/run-mirmap/main.nf'
 include{RUN_MIRMAP as RUN_MIRMAP_ALT} from './modules/core/run-mirmap/main.nf'
 
 								/*POS-processing */
-include{CAT_REF_TARGETS} from './modules/pos/cat-ref-targets/main.nf'
-include{CAT_ALT_TARGETS} from './modules/pos/cat-alt-targets/main.nf'
+include{CAT_TARGETSCAN as CAT_TARGETSCAN_REF} from './modules/pos/cat-targetscan/main.nf' addParams(output_name: 'All_targets_ref.tsout')
+include{CAT_TARGETSCAN as CAT_TARGETSCAN_ALT} from './modules/pos/cat-targetscan/main.nf' addParams(output_name: 'All_targets_alt.tsout')
+include{CAT_MIRMAP as CAT_MIRMAP_ALT} from './modules/pos/cat-mirmap/main.nf' addParams(output_name: 'All_targets_alt.mirmapout')
+include{CAT_MIRMAP as CAT_MIRMAP_REF} from './modules/pos/cat-mirmap/main.nf' addParams(output_name: 'All_targets_ref.mirmapout')
+
+
+include{COMPARE_TARGETS_TOOLS as COMPARE_TOOLS_REF} from './modules/pos/compare-tools/main.nf' addParams(output_name: 'All_targets.ref')
+include{COMPARE_TARGETS_TOOLS as COMPARE_TOOLS_ALT} from './modules/pos/compare-tools/main.nf' addParams(output_name: 'All_targets.alt')
+
 include{COMPARE_TARGETS} from './modules/pos/compare-targets/main.nf'
+
 
 
 /*  main pipeline logic */
@@ -410,16 +418,25 @@ workflow  {
 
 /* pos-processing */
 						// collect targets outputs
-						T1 = TARGETSCAN_REF.collect()
-						T2 = MIRMAP_REF.collect()
+				//		T1 = TARGETSCAN_REF.collect()
+				// 		T2 = MIRMAP_REF.collect()
+							// Cat targetScan
+							ALL_TARGETSCAN_REF = CAT_TARGETSCAN_REF(TARGETSCAN_REF.collect())
+							ALL_TARGETSCAN_ALT = CAT_TARGETSCAN_ALT(TARGETSCAN_ALT.collect())
+							 //CAT miRmap
+							ALL_MIRMAP_REF = CAT_MIRMAP_REF(MIRMAP_REF.collect())
+							ALL_MIRMAP_ALT = CAT_MIRMAP_ALT(MIRMAP_ALT.collect())
 						// Merge mirmap and targetscan data
-						REF_TARGETS = CAT_REF_TARGETS(T1,T2, CONVERT_GFF_TO_BED.out, R_script_5)
-						// collect targets outputs
-						T3 = TARGETSCAN_ALT.collect()
-						T4 = MIRMAP_ALT.collect()
+						 REF_TARGETS = COMPARE_TOOLS_REF(ALL_TARGETSCAN_REF,
+							 																ALL_MIRMAP_REF,
+																							CONVERT_GFF_TO_BED.out,
+																							R_script_5)
 						// Merge mirmap and targetscan data
-						ALT_TARGETS = CAT_ALT_TARGETS(T3,T4, CONVERT_GFF_TO_BED.out, R_script_5)
-						// Pos1-COMPARE_TARGETS: Compare REF and ALT targets
-						COMPARE_TARGETS(REF_TARGETS.tsv, ALT_TARGETS.tsv, R_script_6)
+					  ALT_TARGETS = COMPARE_TOOLS_ALT(ALL_TARGETSCAN_ALT,
+																						ALL_MIRMAP_ALT,
+																						CONVERT_GFF_TO_BED.out,
+																								R_script_5)
+						// COMPARE_TARGETS: Compare REF and ALT targets
+						COMPARE_TARGETS(REF_TARGETS.TSV, ALT_TARGETS.TSV, R_script_6)
 
 }
